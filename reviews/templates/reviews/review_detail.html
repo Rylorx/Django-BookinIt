@@ -1,0 +1,220 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Review Detail</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'reviews/css/review_styles.css' %}" />
+  <style>
+    body {
+      min-height: 100vh;
+      padding-bottom: 150px;
+    }
+
+    a {
+      color: black;
+      text-decoration: none;
+    }
+
+    a:hover {
+      color: rgb(44, 85, 197);
+      cursor: pointer;
+    }
+
+    #search {
+      margin-left: 5px;
+      border-radius: 2px;
+      height: 60px;
+      width: 80px;
+    }
+  </style>
+</head>
+
+<body>
+  {% load socialaccount %}
+  <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
+    <div class="container-fluid">
+      <span class="navbar-brand">Bookin' It</span>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse ms-3" id="navbarNav">
+        <div class="navbar-nav">
+          <a class="nav-link active" href="{% url 'home' %}">Home</a>
+          <a class="nav-link active" href="{% url 'books_view' %}">Look for Books</a>
+          <a class="nav-link" href="{% url 'about' %}">About</a>
+          {% comment %} <a class="nav-link" href="{% url 'contact' %}">Contact</a> {% endcomment %}
+        </div>
+        <div class="ms-auto d-flex align-items-center">
+          {% if user.is_authenticated %}
+          {% if pma_flag %}
+          <span class="navbar-text me-3">
+            Signed in as {{ user.first_name }} | {{ user.email }} (PMA ADMIN)
+          </span>
+          {% else %}
+          <span class="navbar-text me-3">
+            Signed in as {{ user.first_name }} | {{ user.email }} (REGULAR USER)
+          </span>
+          {% endif %}
+          <a href="{% url 'user_profile' %}" class="btn btn-primary me-2">View Profile</a>
+          <a href="{% url 'logout_view' %}" class="btn btn-outline-primary">Log out</a>
+          {% else %}
+          <span class="navbar-text me-3">Not signed in (guest mode)</span>
+          <form action="{% provider_login_url 'google' %}" method="post" class="d-inline-flex">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">Log in</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Review Detail Content -->
+  <div class="container mt-4">
+    <h2>{{ review.title }}</h2>
+    <p>Author: {{ review.author }}</p>
+    <p>Genre: {{ review.get_genre_display }}</p>
+    <p>Rating: {{ review.rating }}/5</p>
+    <p>
+      Reviewed by
+      <a href="{% url 'view_profile' username=review.user.username %}" class="review-user">
+        {{ review.user.username }}
+      </a>
+      on {{ review.date|date:"F d, Y" }}
+    </p>
+
+
+
+    <div>{{ review.comment }}</div>
+    
+    {% if review.file_upload %}
+    <div class="mt-3 mb-3">
+      <h4>Attachment:</h4>
+      {% with file_url=review.file_upload.url|lower %}
+      {% if file_url|slice:"-4:" == ".jpg" or file_url|slice:"-5:" == ".jpeg" or file_url|slice:"-4:" == ".png" %}
+      <img src="{{ review.file_upload.url }}" alt="Attachment" class="img-fluid" />
+      {% elif file_url|slice:"-4:" == ".pdf" or file_url|slice:"-4:" == ".txt" %}
+      <iframe src="{{ review.file_upload.url }}" width="100%" height="500px"></iframe>
+      {% else %}
+      <a href="{{ review.file_upload.url }}" target="_blank">Download Attachment</a>
+      {% endif %} {% endwith %}
+    </div>
+    {% else %}
+    <p>No attachment uploaded.</p>
+    {% endif %}
+
+    {% if user == review.user or pma_flag %}
+    <div class="container mt-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h3> Pending Join Requests </h3>
+        </div>
+        <div class="card-body">
+          {% if join_requests %}
+          <ul class="list-group">
+            {% for join_request in join_requests %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>
+                {{ join_request.user.username }}
+                (Requested on {{ join_request.requested_at|date:"F, d, Y" }})
+              </span>
+              <div>
+                <form method="post" action="{% url 'manage_join_requests' review.id %}" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="join_request_id" value="{{ join_request.id }}">
+                  <button type="submit" name="action" value="accept" class="btn btn-success btn-sm">Accept</button>
+                  <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm"> Reject</button>
+
+                </form>
+              </div>
+              
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p> No pending join requests </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% endif %}
+
+
+    <div class="d-flex justify-content-center mt-3">
+
+      {% if membership and user != review.user %}
+      
+      <div class="leave-review">
+        {% if membership and user != review.user %}
+            <form action="{% url 'leave_review' review.id %}" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Leave Review</button>
+            </form>
+        {% endif %}
+      </div>
+
+      {% endif %}
+
+      {% if user == review.user or pma_flag %}
+
+
+      <form action="{% url 'remove_book_review' review.id %}" method="post" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete Review</button>
+      </form>
+
+      {% endif %}
+    </div>
+
+    <hr />
+
+    <!-- Comments Section -->
+    <h3>Comments ({{ comments|length }}) </h3>
+    {% for comment in comments %}
+    <div class="card mb-2">
+      <div class="card-body">
+        <p><strong>Rating: {{ comment.rating }}/5</strong></p>
+        <p>{{ comment.text }}</p>
+        <small>Commented by {{ comment.user.username }} on {{ comment.date }}</small>
+      </div>
+    </div>
+    {% empty %}
+    <p>No comments yet.</p>
+    {% endfor %} {% if user.is_authenticated %}
+
+    <hr />
+
+    <h3>Add a Comment</h3>
+    <form method="post">
+      {% csrf_token %}
+
+      <!-- Comment Field -->
+      <div class="form-group">
+        <label for="text">Add a comment:</label>
+        {{ form.text }} <!-- Renders the comment field -->
+      </div>
+
+      <!-- Rating Field -->
+      <div class="form-group">
+        <label for="rating">Rating (1-5):</label>
+        {{ form.rating }} <!-- This explicitly renders the rating field as a number input -->
+      </div>
+
+      <button type="submit" class="btn btn-primary">Post Comment</button>
+    </form>
+    {% else %}
+    <p>You must be logged in to post a comment. <a href="{% url 'account_login' %}">Log in</a></p>
+    {% endif %}
+
+  </div>
+  {% include 'reviews/footer.html' %}
+</body>
+
+</html>
