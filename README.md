@@ -5,15 +5,15 @@
 
 __Contributors:__
 #
-Sam Banjade  Role: Testing
+Sam Banjade Role: Testing
 #
-Sam Brooks  Role: Software Architext
+Sam Brooks Role: Software Architext
 #
-Evelyn Nguyen  Role: Scrum Master
+Evelyn Nguyen Role: Scrum Master
 #
-Ryan LeKuch  Role: DevOps
+Ryan LeKuch Role: DevOps
 #
-Jonathan Varghese  Role: Requirements Manager
+Jonathan Varghese Role: Requirements Manager
 
 ## Setup Instructions
 
